@@ -1,0 +1,12 @@
+.venv
+.venv-test
+__pycache__/
+*.pyc
+.pytest_cache/
+*.db
+node_modules/
+.next/
+.env
+web/.env.local
+*.exe
+.DS_Store

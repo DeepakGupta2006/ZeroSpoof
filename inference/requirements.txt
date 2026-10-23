@@ -1,0 +1,14 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+numpy>=1.26
+scipy>=1.11
+redis>=5.0
+sqlalchemy>=2.0,<2.1
+psycopg[binary]>=3.1   # PostgreSQL driver (only used when DATABASE_URL points at Postgres)
+httpx>=0.27
+pydantic>=2.5
+websockets>=12.0
+# Optional (enable the ONNX depth / AASIST audio models):
+# onnxruntime>=1.17
+# Optional (tools/video_to_session.py):
+# opencv-python-headless>=4.9,<5

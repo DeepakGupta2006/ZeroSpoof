@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Fit the fusion logistic regression and write inference/models/fusion.json.
 
 Input: a CSV with one row per labelled session and the per-module scores/confidences, e.g. produced

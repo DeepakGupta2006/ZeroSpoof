@@ -25,10 +25,10 @@ from . import ModuleResult, unavailable
 
 log = logging.getLogger("zerospoof.audio")
 SR = 16000
-AASIST_LEN = 64600  # ~4.04 s, the AASIST/RawNet2 input length
+AASIST_LEN = 64600  
 
 
-# ---------------------------------------------------------------- features
+
 def _frames(x: np.ndarray, win: int, hop: int) -> np.ndarray:
     n = 1 + max(0, (len(x) - win) // hop)
     idx = np.arange(win)[None, :] + hop * np.arange(n)[:, None]
@@ -97,7 +97,7 @@ def _vec(feats: dict[str, float], impute: dict[str, float]) -> np.ndarray:
     return np.array([impute.get(k, 0.0) if np.isnan(feats[k]) else feats[k] for k in FEATURE_ORDER])
 
 
-# ---------------------------------------------------------------- tiers
+
 @lru_cache(maxsize=1)
 def _onnx():
     p = Path(settings.models_dir) / "audio.onnx"
@@ -107,7 +107,7 @@ def _onnx():
         import onnxruntime as ort
 
         return ort.InferenceSession(str(p), providers=["CPUExecutionProvider"])
-    except Exception as e:  # pragma: no cover
+    except Exception as e:  
         log.warning("audio ONNX model could not be loaded: %s", e)
         return None
 
@@ -119,7 +119,7 @@ def _baseline():
         return None
     try:
         return json.loads(p.read_text())
-    except Exception as e:  # pragma: no cover
+    except Exception as e:  
         log.warning("audio baseline could not be loaded: %s", e)
         return None
 
@@ -132,7 +132,7 @@ def analyze(audio: np.ndarray | None, sr: int = SR, min_seconds: float = 2.0) ->
     name = "audio"
     if audio is None or len(audio) < sr * min_seconds:
         return unavailable(name, "not enough audio yet (or microphone not shared)")
-    x = audio.astype(np.float32)[-6 * sr :]  # the most recent 6 s is plenty (AASIST uses ~4 s)
+    x = audio.astype(np.float32)[-6 * sr :]  
     if float(np.sqrt(np.mean(x**2))) < 0.003:
         return unavailable(name, "audio is silent")
 
@@ -143,7 +143,7 @@ def analyze(audio: np.ndarray | None, sr: int = SR, min_seconds: float = 2.0) ->
             seg = np.tile(seg, int(np.ceil(AASIST_LEN / len(seg))))[:AASIST_LEN]
         out = np.asarray(sess.run(None, {sess.get_inputs()[0].name: seg[None, :].astype(np.float32)})[0]).reshape(-1)
         e = np.exp(out - out.max())
-        p_bona = float(e[-1] / e.sum())  # convention: last logit = bona fide
+        p_bona = float(e[-1] / e.sum())  
         res = ModuleResult(name, score=p_bona, confidence=0.9, details={"tier": "onnx", "p_bonafide": round(p_bona, 4)})
         if p_bona < 0.3:
             res.flag("synthetic_voice", "high", "Audio model rates the voice as synthetic or cloned.")
@@ -159,7 +159,6 @@ def analyze(audio: np.ndarray | None, sr: int = SR, min_seconds: float = 2.0) ->
             res.flag("synthetic_voice", "medium", "Audio features resemble synthetic speech.")
         return res
 
-    # Tier 3: heuristic cues (low confidence by design).
     spoof = 0.0
     cues = []
     if feats["clicks_per_s"] > 1.5:

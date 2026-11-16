@@ -119,10 +119,10 @@ def test_audit_chain_verifies_and_detects_tampering(client):
 
     db = app.state.db
     import sqlalchemy as sa
-    with pytest.raises(Exception):  # triggers block UPDATE/DELETE
+    with pytest.raises(Exception):  
         with db.engine.begin() as c:
             c.exec_driver_sql("UPDATE audit_log SET payload='{}' WHERE id=1")
-    # simulate an attacker with raw DB access who drops the trigger and edits a row
+   
     with db.engine.begin() as c:
         c.exec_driver_sql("DROP TRIGGER audit_no_update")
         c.exec_driver_sql("UPDATE audit_log SET payload='{\"forged\":true}' WHERE id=1")

@@ -68,7 +68,7 @@ def analyze(patches: list[np.ndarray], min_patches: int = 4) -> ModuleResult:
     med_count = float(np.median(counts))
     max_glare = float(np.max(glares))
 
-    # A moire peak persists at (about) the same frequency over time; random noise peaks wander.
+   
     locs_arr = np.array(locs, dtype=float)
     spread = float(np.median(np.linalg.norm(locs_arr - np.median(locs_arr, axis=0), axis=1)))
     persistent = spread < 4.0

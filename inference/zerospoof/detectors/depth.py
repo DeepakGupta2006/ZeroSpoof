@@ -36,10 +36,10 @@ def _session():
     if not path.exists():
         return None
     try:
-        import onnxruntime as ort  # optional dependency
+        import onnxruntime as ort  
 
         return ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
-    except Exception as e:  # pragma: no cover - depends on optional install
+    except Exception as e:  
         log.warning("depth model could not be loaded: %s", e)
         return None
 
@@ -53,8 +53,8 @@ def relief_metrics(depth: np.ndarray) -> dict[str, float]:
     a = np.stack([xx.ravel() / w, yy.ravel() / h, np.ones(h * w)], axis=1)
     coef, *_ = np.linalg.lstsq(a, d.ravel(), rcond=None)
     resid = d.ravel() - a @ coef
-    planarity_resid = float(np.sqrt(np.mean(resid**2)))  # 0 for a perfect plane, ~1 for pure relief
-    # centre-vs-border relief: a face bulges towards the camera in the middle
+    planarity_resid = float(np.sqrt(np.mean(resid**2))) 
+   
     cy, cx = slice(h // 4, 3 * h // 4), slice(w // 4, 3 * w // 4)
     centre = d[cy, cx].mean()
     border = np.concatenate([d[:h // 8].ravel(), d[-h // 8 :].ravel(), d[:, :w // 8].ravel(), d[:, -w // 8 :].ravel()]).mean()
@@ -74,7 +74,7 @@ def analyze(patches: list[np.ndarray], min_patches: int = 3) -> ModuleResult:
     if len(patches) < min_patches:
         return unavailable(name, "not enough face crops yet")
     inp = sess.get_inputs()[0]
-    shape = inp.shape  # e.g. [1, 3, 256, 256]
+    shape = inp.shape 
     try:
         size = int(shape[2]) if isinstance(shape[2], int) else 256
     except Exception:

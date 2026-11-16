@@ -125,9 +125,7 @@ def stream_checks(t_ms: np.ndarray, rois: np.ndarray, patch_data: list[np.ndarra
         x = rois[:, :, :].mean(axis=1).sum(axis=1)  # luminance-like per-frame trace
         dur = (t_ms[-1] - t_ms[0]) / 1000.0
         fs = len(t_ms) / max(dur, 1e-3)
-        # A looped clip repeats *everything*, including per-frame sensor noise. Real video never does,
-        # and a genuine heartbeat (quasi-periodic) must not be mistaken for a loop, so we correlate the
-        # high-frequency residual (>~3 Hz), not the pulse band.
+        
         w = 5
         ma = np.convolve(x, np.ones(w) / w, mode="valid")
         x = x[w // 2 : w // 2 + len(ma)] - ma

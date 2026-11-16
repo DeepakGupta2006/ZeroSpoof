@@ -21,17 +21,16 @@ _WIN = np.outer(np.hanning(PATCH), np.hanning(PATCH)).astype(np.float32)
 _YY, _XX = np.indices((PATCH, PATCH))
 _R = np.hypot(_YY - PATCH // 2, _XX - PATCH // 2)
 _MASK = (_R >= 10) & (_R <= 60)
-# DC axes get ringing from the window / edges; ignore a thin cross through the centre.
 _MASK &= ~((np.abs(_YY - PATCH // 2) <= 1) | (np.abs(_XX - PATCH // 2) <= 1))
 
 
 def peak_residual(patch: np.ndarray) -> tuple[float, float, tuple[int, int]]:
     """Return (max log-spectrum residual, count of strong bins, location of the peak)."""
     x = patch.astype(np.float32)
-    x = x - ndimage.gaussian_filter(x, 5)  # remove shading / low-frequency content
+    x = x - ndimage.gaussian_filter(x, 5)  
     spec = np.fft.fftshift(np.fft.fft2(x * _WIN))
     mag = np.log(np.abs(spec) + 1e-3)
-    bg = ndimage.uniform_filter(mag, size=11)  # local mean of log-magnitude (fast; a lone peak barely moves it)
+    bg = ndimage.uniform_filter(mag, size=11)  
     res = (mag - bg) * _MASK
     idx = np.unravel_index(int(np.argmax(res)), res.shape)
     return float(res[idx]), float((res > 2.3).sum()), (int(idx[0]), int(idx[1]))

@@ -20,8 +20,8 @@ from scipy import signal
 from . import ModuleResult, unavailable
 
 FS = 30.0
-BAND = (0.7, 4.0)  # Hz  (42-240 bpm)
-HR_RANGE = (0.7, 3.0)  # Hz  (42-180 bpm) accepted as a plausible heart rate
+BAND = (0.7, 4.0) 
+HR_RANGE = (0.7, 3.0) 
 
 
 def resample_uniform(t_ms: np.ndarray, rois: np.ndarray, fs: float = FS) -> np.ndarray:
@@ -46,7 +46,7 @@ def pos(rgb: np.ndarray, fs: float = FS, win_s: float = 1.6) -> np.ndarray:
     proj = np.array([[0.0, 1.0, -1.0], [-2.0, 1.0, 1.0]])
     h = np.zeros(n)
     for start in range(0, n - win + 1):
-        c = rgb[start : start + win].T  # 3 x win
+        c = rgb[start : start + win].T 
         mean = c.mean(axis=1, keepdims=True)
         mean[mean == 0] = 1.0
         s = proj @ (c / mean)
@@ -144,12 +144,11 @@ def analyze(t_ms: np.ndarray, rois: np.ndarray, min_seconds: float = 8.0,
 
     x = resample_uniform(t_ms, rois)
     k = x.shape[1]
-    sigs = np.stack([bandpass(pos(x[:, i, :])) for i in range(k)])  # (K, M)
+    sigs = np.stack([bandpass(pos(x[:, i, :])) for i in range(k)]) 
     comb = sigs.mean(axis=0)
 
     hr_hz, snr_db = peak_and_snr(comb)
 
-    # Stability: heart rate estimated on 3 overlapping sub-windows should agree.
     m = comb.shape[0]
     w = int(m * 0.6)
     starts = [0, (m - w) // 2, m - w]
@@ -157,7 +156,6 @@ def analyze(t_ms: np.ndarray, rois: np.ndarray, min_seconds: float = 8.0,
     hr_std_bpm = float(np.std(hrs) * 60.0)
     stability = float(np.exp(-hr_std_bpm / 8.0))
 
-    # Coherence between regions (band-passed POS signals of a real face move together).
     if k >= 2:
         cc = np.corrcoef(sigs)
         iu = np.triu_indices(k, 1)
@@ -165,7 +163,6 @@ def analyze(t_ms: np.ndarray, rois: np.ndarray, min_seconds: float = 8.0,
     else:
         coherence = 0.5
 
-    # Lighting / signal-quality estimate -> confidence.
     luma = x.mean(axis=(1, 2))
     mean_luma = float(luma.mean())
     lighting_ok = 1.0 if 50 <= mean_luma <= 215 else 0.5

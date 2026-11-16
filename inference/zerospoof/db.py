@@ -38,7 +38,7 @@ webhooks = sa.Table(
     sa.Column("key_id", sa.String(32), nullable=False, index=True),
     sa.Column("url", sa.Text, nullable=False),
     sa.Column("secret", sa.String(80), nullable=False),
-    sa.Column("events", sa.Text, nullable=False),  # JSON list
+    sa.Column("events", sa.Text, nullable=False),  
     sa.Column("active", sa.Boolean, nullable=False, default=True),
 )
 sessions = sa.Table(
@@ -51,7 +51,7 @@ sessions = sa.Table(
     sa.Column("probability", sa.Float),
     sa.Column("created_at", sa.Float, nullable=False, index=True),
     sa.Column("finished_at", sa.Float),
-    sa.Column("summary", sa.Text),  # JSON: modules, flags, fingerprint
+    sa.Column("summary", sa.Text), 
 )
 audit_log = sa.Table(
     "audit_log", metadata,
@@ -87,7 +87,7 @@ def _canonical(ts: float, session_id: str | None, key_id: str | None, event: str
 class Database:
     def __init__(self, url: str) -> None:
         kwargs: dict[str, Any] = {"future": True}
-        # Accept the usual postgres:// / postgresql:// URLs and use the psycopg 3 driver for them.
+        
         if url.startswith("postgres://"):
             url = "postgresql://" + url[len("postgres://"):]
         if url.startswith("postgresql://"):
@@ -98,7 +98,7 @@ class Database:
         self.dialect = self.engine.dialect.name
         self._chain_lock = threading.Lock()
 
-    # -------------------------------------------------------------- setup
+   #Setup
     def init(self) -> None:
         metadata.create_all(self.engine)
         with self.engine.begin() as c:
@@ -126,7 +126,7 @@ class Database:
         self.ensure_key("admin", settings.admin_key, "admin")
         self.ensure_key("dev customer", settings.dev_api_key, "customer")
 
-    # -------------------------------------------------------------- keys
+  #ALL KEYS
     def ensure_key(self, name: str, raw: str, role: str) -> str:
         h = hash_key(raw)
         with self.engine.begin() as c:
@@ -146,7 +146,6 @@ class Database:
             row = c.execute(sa.select(api_keys).where(api_keys.c.key_hash == hash_key(raw), api_keys.c.active.is_(True))).first()
         return dict(row._mapping) if row else None
 
-    # -------------------------------------------------------------- audit chain
     def audit(self, event: str, session_id: str | None = None, key_id: str | None = None, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         body = json.dumps(payload or {}, separators=(",", ":"), sort_keys=True, default=str)
         ts = round(time.time(), 6)
@@ -177,7 +176,6 @@ class Database:
                 n += 1
         return {"ok": True, "checked": n, "first_bad_id": None}
 
-    # -------------------------------------------------------------- sessions
     def upsert_session(self, sid: str, **vals: Any) -> None:
         if "summary" in vals and not isinstance(vals["summary"], str):
             vals["summary"] = json.dumps(vals["summary"], default=str)
@@ -206,7 +204,7 @@ class Database:
         d["summary"] = json.loads(d["summary"]) if d.get("summary") else {}
         return d
 
-    # -------------------------------------------------------------- webhooks
+
     def add_webhook(self, key_id: str, url: str, events: list[str]) -> dict[str, Any]:
         wid, secret = secrets.token_hex(8), "whsec_" + secrets.token_urlsafe(24)
         with self.engine.begin() as c:
@@ -229,7 +227,6 @@ class Database:
             res = c.execute(webhooks.update().where(webhooks.c.id == wid, webhooks.c.key_id == key_id).values(active=False))
             return res.rowcount > 0
 
-    # -------------------------------------------------------------- usage
     def record_usage(self, key_id: str, session_id: str, verdict: str) -> None:
         with self.engine.begin() as c:
             c.execute(usage_events.insert().values(key_id=key_id, ts=time.time(), session_id=session_id, verdict=verdict))

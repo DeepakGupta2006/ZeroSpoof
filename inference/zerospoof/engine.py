@@ -27,7 +27,7 @@ class ProtocolError(ValueError):
 
 class LiveSession:
     def __init__(self, sid: str, key_id: str, chall: dict[str, Any] | None, offline: bool = False) -> None:
-        self.offline = offline  # True for files: timestamps are synthetic, so skip the timing check
+        self.offline = offline  
         self.sid, self.key_id, self.challenge = sid, key_id, chall
         self.t: list[float] = []
         self.rois: list[list[list[float]]] = []
@@ -38,13 +38,12 @@ class LiveSession:
         self.audio_chunks: list[np.ndarray] = []
         self.audio_samples = 0
         self.fingerprint: dict[str, Any] = {}
-        self.face_tracker = True  # False when the browser could not load face-landmark tracking
+        self.face_tracker = True 
         self.challenge_window: tuple[float, float] | None = None
         self.k_rois: int | None = None
         self.latencies: list[float] = []
         self.started = time.time()
 
-    # ------------------------------------------------------------ ingestion
     def add_hello(self, msg: dict[str, Any]) -> None:
         fp = msg.get("fingerprint")
         if isinstance(fp, dict):
@@ -65,7 +64,7 @@ class LiveSession:
             if self.k_rois is None:
                 self.k_rois = rois.shape[0]
             if rois.shape[0] != self.k_rois or (self.t and t <= self.t[-1]):
-                continue  # drop inconsistent / out-of-order frames
+                continue  
             self.t.append(t)
             self.rois.append(np.clip(rois, 0, 255).tolist())
             self.yaw.append(float(fr.get("yaw", 0.0)))
@@ -103,7 +102,6 @@ class LiveSession:
             raise ProtocolError("challenge nonce mismatch")
         self.challenge_window = (float(msg["start"]), float(msg["end"]))
 
-    # ------------------------------------------------------------ analysis
     @property
     def elapsed(self) -> float:
         return (self.t[-1] - self.t[0]) / 1000.0 if len(self.t) > 1 else 0.0
@@ -120,7 +118,7 @@ class LiveSession:
             mods["stream"] = fingerprint.stream_checks(t, rois, self.patches, check_timing=not self.offline)
             if self.face_tracker:
                 mods["challenge"] = challenge.evaluate(self.challenge, t, yaw, blink, self.challenge_window)
-            else:  # no landmarks on this device: the challenge cannot be judged, so it is not held against the user
+            else: 
                 mods["challenge"] = unavailable("challenge", "face tracking unavailable in this browser")
         mods["moire"] = moire.analyze(self.patches)
         mods["depth"] = depth.analyze(self.patches)
@@ -129,7 +127,7 @@ class LiveSession:
 
         verdict = fusion.decide(mods, self.elapsed, final)
         if not self.face_tracker and verdict.verdict == "pass":
-            # Without the challenge a PASS is not allowed: send it to a human instead.
+           
             verdict.verdict = "review"
             verdict.reasons.append("challenge could not be performed (face tracking unavailable): manual review")
         latency = (time.perf_counter() - t0) * 1000.0

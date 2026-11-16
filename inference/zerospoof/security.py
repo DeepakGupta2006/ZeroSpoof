@@ -13,7 +13,6 @@ from fastapi import Header, HTTPException, Request
 from .config import settings
 
 
-# ---------------------------------------------------------------- client tokens
 def _b64(b: bytes) -> str:
     return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
 
@@ -42,7 +41,6 @@ def verify_client_token(token: str) -> dict[str, Any] | None:
         return None
 
 
-# ---------------------------------------------------------------- webhook signatures
 def sign_webhook(secret: str, timestamp: int, body: bytes) -> str:
     mac = hmac.new(secret.encode(), f"{timestamp}.".encode() + body, hashlib.sha256).hexdigest()
     return f"t={timestamp},v1={mac}"
@@ -59,8 +57,8 @@ def verify_webhook(secret: str, header: str, body: bytes, tolerance_s: int = 300
     except Exception:
         return False
 
+#FastApi dependecies
 
-# ---------------------------------------------------------------- FastAPI dependencies
 class Principal(dict):
     @property
     def key_id(self) -> str:
@@ -81,12 +79,12 @@ async def authenticate(request: Request, x_api_key: str | None = Header(default=
     if not key:
         raise HTTPException(401, "Invalid API key")
 
-    # Per-key rate limit (requests / minute)
+    
     n = await app.state.store.incr_window(f"key:{key['id']}", 60)
     if n > settings.api_rate_per_min:
         raise HTTPException(429, "Rate limit exceeded", headers={"Retry-After": "30"})
 
-    # Replay protection for state-changing calls: unique nonce + fresh timestamp.
+   
     if request.method in ("POST", "DELETE", "PUT", "PATCH"):
         if x_zs_nonce or settings.require_nonce:
             if not x_zs_nonce or not x_zs_timestamp:

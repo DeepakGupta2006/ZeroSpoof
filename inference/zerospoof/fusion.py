@@ -47,7 +47,7 @@ def features(mods: dict[str, ModuleResult]) -> np.ndarray:
     for n in MODULES:
         r = mods.get(n)
         xs.append(0.0 if r is None or not r.available else (r.score - 0.5) * r.confidence)
-    xs.append(min(xs + [0.0]))  # worst evidence (<= 0)
+    xs.append(min(xs + [0.0])) 
     return np.array(xs)
 
 
@@ -60,7 +60,7 @@ def probability(mods: dict[str, ModuleResult]) -> float:
 
 @dataclass
 class Verdict:
-    verdict: str  # pending | pass | review | fail
+    verdict: str  
     probability: float
     reasons: list[str]
 
@@ -74,13 +74,13 @@ def decide(mods: dict[str, ModuleResult], elapsed_s: float, final: bool) -> Verd
             reasons.append("DEMO MODE: inconclusive pulse ignored")
     p = probability(mods)
 
-    # --- hard rules: strong, trusted evidence of an attack caps the score
+  
     for n, r in mods.items():
         if not r.available:
             continue
         if r.confidence >= 0.5 and r.score <= 0.12 and n in ("moire", "fingerprint", "stream", "depth", "challenge", "audio"):
             if n == "audio" and r.confidence < 0.6:
-                continue  # weak heuristic audio never decides on its own
+                continue 
             p = min(p, 0.15)
             reasons.append(f"{n}: strong attack evidence")
         elif r.confidence >= 0.5 and r.score <= 0.3 and n != "audio":
@@ -89,7 +89,7 @@ def decide(mods: dict[str, ModuleResult], elapsed_s: float, final: bool) -> Verd
 
     audio_r = mods.get("audio")
     if audio_r and audio_r.available and any(f["code"] == "synthetic_voice" for f in audio_r.flags):
-        p = min(p, 0.6)  # synthetic-voice cue alone never fails a session, but it always forces a human review
+        p = min(p, 0.6)  
         reasons.append("audio: possible synthetic voice")
 
     for n in ("rppg",):
@@ -98,7 +98,7 @@ def decide(mods: dict[str, ModuleResult], elapsed_s: float, final: bool) -> Verd
             p = min(p, 0.55)
             reasons.append("rppg: no reliable pulse")
 
-    # --- a PASS needs a print/screen check AND a liveness cue
+ 
     moire_ok = mods.get("moire") is not None and mods["moire"].available
     live_cue = any(mods.get(n) is not None and mods[n].available for n in ("rppg", "challenge", "depth"))
     if not (moire_ok and live_cue):

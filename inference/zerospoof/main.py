@@ -56,7 +56,7 @@ async def lifespan(app: FastAPI):
     await asyncio.to_thread(db.seed_dev_keys)
     app.state.db = db
     app.state.store = await make_store(settings.redis_url)
-    app.state.live = {}  # sid -> LiveSession
+    app.state.live = {}  
     if settings.env != "prod":
         log.warning("DEV MODE: dev API key '%s' and admin key '%s' are active. Do not expose this to the internet.",
                     settings.dev_api_key, settings.admin_key)
@@ -74,7 +74,7 @@ def _db_call(fn, *a, **kw):
     return asyncio.to_thread(fn, *a, **kw)
 
 
-# ---------------------------------------------------------------- models
+# models
 class CreateSession(BaseModel):
     external_id: str | None = Field(default=None, max_length=200, description="Your own reference (user id, application id...)")
     challenge: bool = True
@@ -89,7 +89,7 @@ class CreateKey(BaseModel):
     name: str = Field(min_length=1, max_length=120)
 
 
-# ---------------------------------------------------------------- helpers
+
 async def _present(row: dict[str, Any], timeline: bool = False) -> dict[str, Any]:
     store = app.state.store
     out = {
@@ -121,7 +121,6 @@ async def _owned_session(sid: str, p: Principal) -> dict[str, Any]:
     return row
 
 
-# ---------------------------------------------------------------- REST
 @app.get("/", include_in_schema=False)
 async def root():
     from fastapi.responses import RedirectResponse
@@ -180,7 +179,7 @@ async def create_webhook(body: CreateWebhook, p: Principal = Depends(authenticat
         raise HTTPException(422, f"events must be a subset of {sorted(allowed)}")
     hook = await _db_call(app.state.db.add_webhook, p.key_id, body.url, body.events)
     await _db_call(app.state.db.audit, "webhook.created", None, p.key_id, {"id": hook["id"], "url": body.url})
-    return hook  # the signing secret is shown only here
+    return hook 
 
 
 @app.get("/v1/webhooks")
@@ -209,7 +208,6 @@ async def create_key(body: CreateKey, p: Principal = Depends(authenticate)):
     return {"id": kid, "name": body.name, "api_key": raw, "note": "Store this key now; it cannot be shown again."}
 
 
-# ---------------------------------------------------------------- WebSocket stream
 def _client_view(res: dict[str, Any]) -> dict[str, Any]:
     """What the browser is allowed to see. Detailed scores help attackers tune a spoof, so in
     production (ZS_EXPOSE_SCORES_TO_CLIENT=0) the browser only learns coarse progress / verdict."""
@@ -228,7 +226,7 @@ async def stream(ws: WebSocket):
         await ws.close(code=4401, reason="invalid or expired token")
         return
     if not await store.setnx(f"tok:{tok['n']}", settings.token_ttl_s + 60):
-        await ws.close(code=4409, reason="token already used")  # replay protection
+        await ws.close(code=4409, reason="token already used")  
         return
     meta = await store.get_json(f"sess:{tok['sid']}")
     if not meta:

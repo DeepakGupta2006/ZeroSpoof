@@ -15,7 +15,7 @@ from typing import Any
 log = logging.getLogger("zerospoof.store")
 
 SESSION_TTL = 24 * 3600
-SCORE_WINDOW = 120  # keep the last N score points per session
+SCORE_WINDOW = 120 
 
 
 class MemoryStore:

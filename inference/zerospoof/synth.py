@@ -24,14 +24,14 @@ PATCH = 128
 class SynthSession:
     kind: str
     duration: float
-    frames: list[dict[str, Any]] = field(default_factory=list)  # {t, rois, yaw, blink}
-    patches: list[dict[str, Any]] = field(default_factory=list)  # {t, data (128x128 uint8)}
+    frames: list[dict[str, Any]] = field(default_factory=list)  
+    patches: list[dict[str, Any]] = field(default_factory=list) 
     audio: np.ndarray | None = None
     fingerprint: dict[str, Any] = field(default_factory=dict)
     challenge_window: tuple[float, float] | None = None
 
 
-# ------------------------------------------------------------------ video
+
 def _pink(rng: np.random.Generator, shape: tuple[int, int]) -> np.ndarray:
     out = np.zeros(shape)
     for s, a in ((1.0, 1.0), (2.0, 1.4), (4.0, 2.0), (8.0, 2.4)):
@@ -45,12 +45,12 @@ def _face_patch(rng: np.random.Generator, base_noise: np.ndarray, yaw_deg: float
     cx = PATCH / 2 + yaw_deg * 0.6
     blob = np.exp(-(((xx - cx) / 48) ** 2 + ((yy - PATCH / 2) / 58) ** 2))
     img = brightness * (0.55 + 0.45 * blob)
-    # eyes, nose, mouth shift with yaw (3-D-like motion)
+  
     for ex, ey, s, a in ((-20, -12, 5, 28), (20, -12, 5, 28), (0, 28, 9, 22), (0, 4, 4, 10)):
         px = cx + ex * (1 + 0.004 * yaw_deg * np.sign(ex or 1)) + yaw_deg * 0.3
         img -= a * np.exp(-(((xx - px) / s) ** 2 + ((yy - PATCH / 2 - ey) / (s * 0.7)) ** 2))
-    img += 5.0 * base_noise  # skin texture
-    img += rng.normal(0, 1.3, img.shape)  # sensor noise
+    img += 5.0 * base_noise  
+    img += rng.normal(0, 1.3, img.shape)  
     return np.clip(img, 0, 255)
 
 
@@ -63,7 +63,7 @@ def _rois(rng: np.random.Generator, n: int, kind: str, tone: float, hard: bool) 
     if kind in ("photo",):
         amp = 0.0
     elif kind == "replay":
-        amp *= 0.12  # video-of-a-video: pulse mostly gone after re-capture + compression
+        amp *= 0.12  
     elif kind == "deepfake":
         amp *= 0.45
     rel = np.array([0.0012, 0.0058, 0.0032]) * amp
@@ -72,7 +72,7 @@ def _rois(rng: np.random.Generator, n: int, kind: str, tone: float, hard: bool) 
     out = np.zeros((n, 3, 3))
     phase0 = rng.uniform(0, 6.28)
     for k in range(3):
-        if kind == "deepfake":  # blended face: regions do not share a heartbeat
+        if kind == "deepfake": 
             fk = f * rng.uniform(0.7, 1.4)
             ph = rng.uniform(0, 6.28)
         else:
@@ -92,7 +92,7 @@ def _yaw_blink(rng: np.random.Generator, n: int, kind: str, challenge: str, win:
     for _ in range(int(len(t) / FS / 4)):
         i = int(rng.uniform(0, n - 6))
         blink[i : i + 4] = 0.9
-    responds = kind in ("genuine", "deepfake", "voice_clone")  # live humans / live face-swap respond
+    responds = kind in ("genuine", "deepfake", "voice_clone")  
     s, e = int(win[0] / 1000 * FS), int(win[1] / 1000 * FS)
     if responds:
         if challenge in ("turn_left", "turn_right"):
@@ -104,7 +104,7 @@ def _yaw_blink(rng: np.random.Generator, n: int, kind: str, challenge: str, win:
                 i = s + int(off * FS)
                 blink[i : i + 4] = 0.92
     elif kind in ("replay", "virtual_cam"):
-        # a pre-recorded clip has its own, unrelated motion
+       
         yaw += 5.0 * np.sin(2 * np.pi * 0.2 * t + 1.0)
     return yaw, blink
 
@@ -135,7 +135,7 @@ def _fingerprint(rng: np.random.Generator, kind: str) -> dict[str, Any]:
     }
 
 
-# ------------------------------------------------------------------ audio
+
 def _voice(rng: np.random.Generator, seconds: float, kind: str, sr: int = 16000) -> np.ndarray:
     n = int(seconds * sr)
     t = np.arange(n) / sr
@@ -160,7 +160,7 @@ def _voice(rng: np.random.Generator, seconds: float, kind: str, sr: int = 16000)
     return x.astype(np.float32)
 
 
-# ------------------------------------------------------------------ public
+
 def generate(kind: str, duration: float = 14.0, seed: int | None = None, challenge: str = "turn_left",
              hard: bool = False, with_audio: bool = True) -> SynthSession:
     assert kind in KINDS, kind
@@ -170,16 +170,16 @@ def generate(kind: str, duration: float = 14.0, seed: int | None = None, challen
     brightness = rng.uniform(130, 175) * min(tone, 1.0) + 25
     win = ((duration - 4.0) * 1000.0, (duration - 0.3) * 1000.0)
 
-    if kind == "virtual_cam":  # short pre-recorded clip, looped
+    if kind == "virtual_cam": 
         loop_n = int(4.0 * FS)
         clip = _rois(rng, loop_n, "genuine", tone, hard)
         rois = np.tile(clip, (int(np.ceil(n / loop_n)), 1, 1))[:n]
-        dts = np.full(n, 1000.0 / FS)  # perfectly regular timestamps
+        dts = np.full(n, 1000.0 / FS) 
     else:
         rois = _rois(rng, n, kind, tone, hard)
         dts = rng.normal(1000.0 / FS, 1.8, n).clip(20, 60)
     t_ms = np.cumsum(dts)
-    # keep the challenge window in the same clock as the timestamps
+   
     win = (float(t_ms[int(win[0] / 1000 * FS)]), float(t_ms[min(n - 1, int(win[1] / 1000 * FS))]))
     yaw, blink = _yaw_blink(rng, n, kind, challenge, (win[0] - t_ms[0], win[1] - t_ms[0]))
 

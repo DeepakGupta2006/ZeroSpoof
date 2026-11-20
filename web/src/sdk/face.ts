@@ -54,8 +54,7 @@ export async function createFaceTracker(): Promise<FaceTracker | null> {
           if (p.y < minY) minY = p.y;
           if (p.y > maxY) maxY = p.y;
         }
-        // Yaw from the nose tip's offset between the two cheek-edge landmarks (1 = nose, 234/454 = cheeks).
-        // In the (un-mirrored) camera image, turning to the user's LEFT moves the nose to the image right.
+       
         const nose = lm[1].x;
         const a = lm[234].x;
         const b = lm[454].x;

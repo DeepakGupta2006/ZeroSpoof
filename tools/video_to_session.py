@@ -54,7 +54,7 @@ def read_video(path: str, max_seconds: float):
             if len(faces):
                 box = max(faces, key=lambda f: f[2] * f[3])
             elif box is None:
-                box = (w // 4, h // 6, w // 2, h * 2 // 3)  # fallback: centred crop
+                box = (w // 4, h // 6, w // 2, h * 2 // 3)  
         x, y, bw, bh = [int(v) for v in box]
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 

@@ -53,7 +53,7 @@ async def run_one(base: str, key: str, kind: str, seed: int, realtime: bool) -> 
         for m in msgs:
             await ws.send(json.dumps(m))
             if realtime and m["type"] in ("video", "audio"):
-                await asyncio.sleep(0.1)  # video + audio message per 0.2 s of media
+                await asyncio.sleep(0.1)  
         await asyncio.wait_for(rt, timeout=60)
     return {"kind": kind, "session_id": created["session_id"], "challenge": chall["type"] if chall else None,
             "verdict": final.get("verdict"), "p": final.get("probability"), "secs": round(time.time() - t0, 1),

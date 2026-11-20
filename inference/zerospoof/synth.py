@@ -154,7 +154,7 @@ def _voice(rng: np.random.Generator, seconds: float, kind: str, sr: int = 16000)
     x += rng.normal(0, 0.02 if not synthetic else 0.004, n)
     x = x / (np.abs(x).max() + 1e-9) * 0.5
     if synthetic:
-        for i in range(int(0.5 * sr), n, int(0.5 * sr)):  # spliced chunk boundaries -> clicks
+        for i in range(int(0.5 * sr), n, int(0.5 * sr)): 
             x[i:] += 0.12 * np.sign(rng.normal())
         x = np.clip(x, -0.9, 0.9)
     return x.astype(np.float32)
@@ -206,7 +206,7 @@ def generate(kind: str, duration: float = 14.0, seed: int | None = None, challen
                     img += 140 * np.exp(-(((xx - 95) / 16) ** 2 + ((yy - 30) / 12) ** 2))
             elif kind == "virtual_cam":
                 j = (i % int(4.0 * FS))
-                img = _face_patch(np.random.default_rng(1000 + j), base_noise, float(yaw[i]), brightness)  # frames repeat per loop
+                img = _face_patch(np.random.default_rng(1000 + j), base_noise, float(yaw[i]), brightness)  
             else:
                 img = _face_patch(rng, base_noise, float(yaw[i]), brightness)
             s.patches.append({"t": float(t_ms[i]), "data": np.clip(img, 0, 255).astype(np.uint8)})

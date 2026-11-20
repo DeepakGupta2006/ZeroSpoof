@@ -14,8 +14,7 @@ from .security import sign_webhook
 
 log = logging.getLogger("zerospoof.webhooks")
 EVENT_FOR_VERDICT = {"pass": "session.passed", "fail": "session.failed", "review": "session.review"}
-BACKOFF = (0, 2, 8)  # seconds before each attempt
-
+BACKOFF = (0, 2, 8)  
 
 async def deliver_event(db, key_id: str, session: dict[str, Any]) -> None:
     event = EVENT_FOR_VERDICT.get(session["verdict"])
